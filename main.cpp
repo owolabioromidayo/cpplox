@@ -14,10 +14,19 @@
 void run(const std::string& source) {
     Scanner scanner(source);
     std::vector<Token> tokens = scanner.scanTokens();
+    Parser* parser = new Parser(tokens);
+    Expr* expression = parser->parse();
+
+    if (hadError) return;
+
+    PrettyPrinter p;
+
+    expression->accept(p) ;
+
     
-    for (const Token& token : tokens) {
-        std::cout << token.lexeme << std::endl;
-    }
+    // for (const Token& token : tokens) {
+    //     std::cout << token.lexeme << std::endl;
+    // }
 }
 
 
@@ -59,27 +68,27 @@ void runPrompt() {
 
 int main(int argc, char* argv[]){
 
-    // if (argc > 2){
-    //     std::cout << "Usage: cpplox [script] \n";
-    //     return 0;
-    // } else if (argc == 2){
-    //     runFile(argv[1]);
-    // } else{
-    //     runPrompt();
-    // }
+    if (argc > 2){
+        std::cout << "Usage: cpplox [script] \n";
+        return 0;
+    } else if (argc == 2){
+        runFile(argv[1]);
+    } else{
+        runPrompt();
+    }
 
-    Token minusToken(TokenType::MINUS, "-", "", 1);
-    Token starToken(TokenType::STAR, "*", "", 1);
+    // Token minusToken(TokenType::MINUS, "-", "", 1);
+    // Token starToken(TokenType::STAR, "*", "", 1);
 
-    Literal literal123("123", TokenType::NUMBER);
-    Literal literal45dot67("45.67", TokenType::NUMBER);
+    // Literal literal123("123", TokenType::NUMBER);
+    // Literal literal45dot67("45.67", TokenType::NUMBER);
 
-    Unary unaryMinus(minusToken, literal123);
-    Binary expression(unaryMinus, starToken, literal45dot67);
+    // Unary unaryMinus(minusToken, literal123);
+    // Binary expression(unaryMinus, starToken, literal45dot67);
 
-    PrettyPrinter p;
-    // p.visitUnary(unaryMinus);
-    p.visitBinary(expression);
+    // PrettyPrinter p;
+    // // p.visitUnary(unaryMinus);
+    // p.visitBinary(expression);
 
 }
 
