@@ -24,7 +24,10 @@ enum class TokenType {
     // Keywords.
     AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR,
     PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,
-    EOF_
+    EOF_, 
+
+    //block comment
+    BLOCK_COMMENT_START, BLOCK_COMMENT_END
 };
 
 std::unordered_map<std::string, TokenType> keywords = {
@@ -130,7 +133,15 @@ private:
                 if (match('/')) {
                     // A comment goes until the end of the line.
                     while (peek() != '\n' && !isAtEnd()) advance();
-                } else {
+                } else if(match('*')) {
+                    //block comment start
+                    while (peek() != '*' && !isAtEnd()) advance();
+                    if(match('*') && match('/')) { break;}
+                    else {
+                        error(line, "Invalid block comment.");
+                    } 
+                } 
+                else {
                     addToken(TokenType::SLASH);
                 }
                 break;
