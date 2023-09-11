@@ -16,16 +16,16 @@ void run(const std::string& source) {
     Scanner scanner(source);
     std::vector<Token> tokens = scanner.scanTokens();
     Parser* parser = new Parser(tokens);
-    Expr* expression = parser->parse();
+    std::vector<Statement*> statements = parser->parse();
     Interpreter* interpreter = new Interpreter();
-    interpreter->interpret(expression);
+    interpreter->interpret(statements);
 
-    if (hadError) return;
+    // if (hadError) return;
 
-    PrettyPrinter p;
+    // PrettyPrinter p;
 
-    expression->accept(p);
-    std::cout << std::endl;
+    // expression->accept(p);
+    // std::cout << std::endl;
 
     
     // for (const Token& token : tokens) {

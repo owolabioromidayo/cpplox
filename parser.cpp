@@ -1,78 +1,7 @@
 // #include "types.h"
 #include <stdexcept>
-
+#include <vector>
 #include "types.h"
-
-class Expr {
-public:
-    ~Expr() {} 
-    virtual Value* accept(ExprVisitor& visitor) = 0;
-};
-
-class Binary : public Expr {
-public:
-    Binary(Expr& left, Token& oper, Expr& right)
-        : left(left), oper(oper), right(right) {}
-
-    Binary(Expr*& left, Token& oper, Expr*& right) 
-    : left(*left), oper(oper), right(*right) {}   
-
-
-    Expr& left;
-    Token oper; 
-    Expr& right;
-
-    Value* accept(ExprVisitor& visitor) {
-        return visitor.visitBinary(*this);
-    }
-};
-
-
-class Grouping : public Expr {
-public:
-    Grouping(Expr& expression)
-        : expression(expression) {}
-
-    Grouping(Expr*& expression)
-        : expression(*expression) {}
-
-    Expr& expression;
-
-    Value* accept(ExprVisitor& visitor) {
-        return visitor.visitGrouping(*this);
-    }
-};
-
-class Literal : public Expr {
-public:
-    Literal(std::string value, TokenType type)
-        : value(value), type(type) {}
-
-    TokenType type;
-    std::string value;
-
-    Value* accept(ExprVisitor& visitor) {
-        return visitor.visitLiteral(*this);
-    }
-};
-
-class Unary : public Expr {
-public:
-    Unary(Token& oper, Expr& right)
-        : oper(oper), right(right) {}
-
-    Unary(Token& oper, Expr*& right)
-        : oper(oper), right(*right) {} 
-    
-   
-    Token oper;
-    Expr& right;
-
-    Value* accept(ExprVisitor& visitor) {
-        return visitor.visitUnary(*this);
-    }
-};
-
 
 
 
@@ -90,14 +19,40 @@ public:
     Parser (std::vector<Token> tokens): tokens(tokens) {}
 
 
-    Expr* parse(){
-        try{
-            return expression();
-        } catch(ParseError error){
-            return new Literal("", TokenType::NIL);
+    // Expr* parse(){
+    //     try{
+    //         return expression();
+    //     } catch(ParseError error){
+    //         return new Literal("", TokenType::NIL);
+    //     }
+    // }
+
+    std::vector<Statement*> parse(){
+        std::vector<Statement*> statements;
+        while(!isAtEnd()){
+            statements.push_back(statement());
         }
+        return statements;
     }
 private:
+
+    Statement* statement(){
+        if (match(TokenType::PRINT)) return printStatement();
+        return expressionStatement();
+    }
+
+    Statement* printStatement(){
+        Expr* value = expression();
+        consume(TokenType::SEMICOLON, "Expect ';' after value. ");
+        return new PrintStmt(value);
+    }
+
+    Statement* expressionStatement(){
+        Expr* value = expression();
+        consume(TokenType::SEMICOLON, "Expect ';' after value. ");
+        return new ExprStmt(value);
+    }
+
     Expr* expression() {
         return equality();
     }
@@ -157,7 +112,7 @@ private:
     }
 
     Expr* unary(){
-        std::vector<TokenType> exprs = {TokenType::BANG, TokenType::BANG};
+        std::vector<TokenType> exprs = {TokenType::BANG, TokenType::MINUS};
         if (match(exprs)){
             Token oper = previous();
             Expr* right = unary();

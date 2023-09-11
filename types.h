@@ -130,6 +130,8 @@ class Binary;
 class Grouping; 
 class Literal; 
 class Unary; 
+class ExprStmt;
+class PrintStmt;
 
 class ExprVisitor {
 public:
@@ -140,4 +142,107 @@ public:
     virtual ~ExprVisitor() {}
 };
 
+class StmtVisitor{
+public:
+    virtual void visitPrintStmt(PrintStmt& stmt) = 0;     
+    virtual void visitExprStmt(ExprStmt& stmt) = 0;     
+};
+
+class Expr {
+public:
+    ~Expr() {} 
+    virtual Value* accept(ExprVisitor& visitor) = 0;
+};
+
+class Binary : public Expr {
+public:
+    Binary(Expr& left, Token& oper, Expr& right)
+        : left(left), oper(oper), right(right) {}
+
+    Binary(Expr*& left, Token& oper, Expr*& right) 
+    : left(*left), oper(oper), right(*right) {}   
+
+
+    Expr& left;
+    Token oper; 
+    Expr& right;
+
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitBinary(*this);
+    }
+};
+
+
+class Grouping : public Expr {
+public:
+    Grouping(Expr& expression)
+        : expression(expression) {}
+
+    Grouping(Expr*& expression)
+        : expression(*expression) {}
+
+    Expr& expression;
+
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitGrouping(*this);
+    }
+};
+
+class Literal : public Expr {
+public:
+    Literal(std::string value, TokenType type)
+        : value(value), type(type) {}
+
+    TokenType type;
+    std::string value;
+
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitLiteral(*this);
+    }
+};
+
+class Unary : public Expr {
+public:
+    Unary(Token& oper, Expr& right)
+        : oper(oper), right(right) {}
+
+    Unary(Token& oper, Expr*& right)
+        : oper(oper), right(*right) {} 
+    
+   
+    Token oper;
+    Expr& right;
+
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitUnary(*this);
+    }
+};
+
+class Statement {
+public:
+    ~Statement() {} 
+    virtual void accept(StmtVisitor& visitor) = 0;
+};
+
+
+class ExprStmt : public Statement {
+public:
+    ExprStmt(Expr* expression): expression(expression) {};
+    Expr* expression;
+
+    void accept(StmtVisitor& visitor) {
+        return visitor.visitExprStmt(*this);
+    }
+};
+
+
+class PrintStmt : public Statement {
+public:
+    PrintStmt(Expr* expression): expression(expression) {};
+    Expr* expression;
+
+    void accept(StmtVisitor& visitor) {
+        return visitor.visitPrintStmt(*this);
+    }
+};
 #endif //TYPE_HEADER_H

@@ -11,9 +11,7 @@ public:
 
 };
 
-
-
-class Interpreter: public ExprVisitor {
+class Interpreter: public ExprVisitor, public StmtVisitor {
 
 private: 
     Value* evaluate(Expr* expr){
@@ -37,6 +35,11 @@ private:
         
         return new Value( a->bool_ == b->bool_ );
     }
+
+    void execute(Statement* stmt){
+        stmt->accept(*this);
+    }
+
 public:
     Value* visitBinary(Binary& expr) {
         Value* left = evaluate(&expr.left);        
@@ -95,6 +98,10 @@ public:
                 return new Value(std::stod(expr.value)); 
             case TokenType::STRING:
                 return new Value(expr.value);
+            case TokenType::TRUE:
+                return new Value(true);
+            case TokenType::FALSE:
+                return new Value(false);
         }
         
         return new Value(); //NIL
@@ -114,10 +121,22 @@ public:
 
     }
 
-    void interpret(Expr* expr){
+    void visitExprStmt(ExprStmt& stmt) {
+        evaluate(stmt.expression);
+        return;
+    }
+
+    void visitPrintStmt(PrintStmt& stmt) {
+        Value* value = evaluate(stmt.expression);
+        std::cout << value->view() << std::endl;
+        return;
+    }
+
+    void interpret(std::vector<Statement*> statements){
         try{
-            Value* value = evaluate(expr);
-            std::cout <<  "\n >>"<< evaluate(expr)->view() << std::endl;
+            for (Statement* statement: statements){
+                execute(statement);
+            }
         } catch(RuntimeError err) {
             error(err.token.line, err.message);
         }
