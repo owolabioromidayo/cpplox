@@ -1,25 +1,12 @@
 // #include "types.h"
 #include <stdexcept>
 
-class Binary; 
-class Grouping; 
-class Literal; 
-class Unary; 
-
-class ExprVisitor {
-public:
-    virtual void visitBinary(Binary& expr) = 0;
-    virtual void visitGrouping(Grouping& expr) = 0;
-    virtual void visitLiteral(Literal& expr) = 0;
-    virtual void visitUnary(Unary& expr) = 0;
-    virtual ~ExprVisitor() {}
-};
-
+#include "types.h"
 
 class Expr {
 public:
     ~Expr() {} 
-    virtual void accept(ExprVisitor& visitor) = 0;
+    virtual Value* accept(ExprVisitor& visitor) = 0;
 };
 
 class Binary : public Expr {
@@ -35,8 +22,8 @@ public:
     Token oper; 
     Expr& right;
 
-    void accept(ExprVisitor& visitor) {
-        visitor.visitBinary(*this);
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitBinary(*this);
     }
 };
 
@@ -51,8 +38,8 @@ public:
 
     Expr& expression;
 
-    void accept(ExprVisitor& visitor) {
-        visitor.visitGrouping(*this);
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitGrouping(*this);
     }
 };
 
@@ -64,8 +51,8 @@ public:
     TokenType type;
     std::string value;
 
-    void accept(ExprVisitor& visitor) {
-        visitor.visitLiteral(*this);
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitLiteral(*this);
     }
 };
 
@@ -81,8 +68,8 @@ public:
     Token oper;
     Expr& right;
 
-    void accept(ExprVisitor& visitor) {
-        visitor.visitUnary(*this);
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitUnary(*this);
     }
 };
 

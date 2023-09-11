@@ -9,6 +9,7 @@
 #include "scanner.cpp"
 #include "parser.cpp"
 #include "pretty_printer.cpp"
+#include "interpreter.cpp"
 
 
 void run(const std::string& source) {
@@ -16,6 +17,8 @@ void run(const std::string& source) {
     std::vector<Token> tokens = scanner.scanTokens();
     Parser* parser = new Parser(tokens);
     Expr* expression = parser->parse();
+    Interpreter* interpreter = new Interpreter();
+    interpreter->interpret(expression);
 
     if (hadError) return;
 

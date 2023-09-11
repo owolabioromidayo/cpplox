@@ -1,13 +1,11 @@
-// #include "parser.cpp"
-#include <sstream> // For std::ostringstream
 
-
+#include "types.h"
 
 
 class PrettyPrinter: public ExprVisitor {
 
 private: 
-    void parenthesize(std::string name, std::vector<Expr*> exprs, ExprVisitor& visitor)  { 
+    Value* parenthesize(std::string name, std::vector<Expr*> exprs, ExprVisitor& visitor)  { 
 
         std::cout << "(" << name;
         
@@ -20,25 +18,28 @@ private:
         
         std::cout  << ")";
 
+        return new Value();
+
     }
 public:
-    void visitBinary(Binary& expr) {
+    Value* visitBinary(Binary& expr) {
       //cout some things
     std::vector<Expr*> exprs = {&expr.left, &expr.right}; 
       return parenthesize(expr.oper.lexeme, exprs, *this);
     }
 
-    void visitGrouping(Grouping& expr) {
+    Value* visitGrouping(Grouping& expr) {
         std::cout << "Visiting Grouping" ;
         std::vector<Expr*> exprs = {&expr.expression}; 
         return parenthesize("group", exprs, *this);
     }
 
-    void visitLiteral(Literal& expr) {
+    Value* visitLiteral(Literal& expr) {
         std::cout << expr.value ;
+        return new Value();
     }
 
-    void visitUnary(Unary& expr) {
+    Value* visitUnary(Unary& expr) {
         std::vector<Expr*> exprs = {&expr.right};
         return parenthesize(expr.oper.lexeme, exprs, *this);
     }
