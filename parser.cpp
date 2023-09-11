@@ -201,12 +201,12 @@ private:
     }
 
     
-    bool isAtEnd() {
+    bool isAtEnd() { 
         return peek().type == TokenType::EOF_;
     }
 
     Token peek() {
-    return tokens[current];
+        return tokens[current];
     }
 
     Token previous() {
@@ -237,7 +237,7 @@ private:
             if (check(type)) {
                 advance();
                 return true;
-        }
+            }
         }
         return false;
     }

@@ -21,7 +21,8 @@ void run(const std::string& source) {
 
     PrettyPrinter p;
 
-    expression->accept(p) ;
+    expression->accept(p);
+    std::cout << std::endl;
 
     
     // for (const Token& token : tokens) {

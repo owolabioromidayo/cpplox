@@ -31,6 +31,7 @@ public:
             scanToken();
         }
 
+        addToken(TokenType::EOF_);
         return tokens;
     }
 
