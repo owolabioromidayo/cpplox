@@ -1,15 +1,9 @@
 #include <sstream> // For std::ostringstream
 
 #include "types.h"
+#include "error.h"
 
-
-class RuntimeError: public std::runtime_error {
-public:
-    RuntimeError(Token token, const std::string& message) : std::runtime_error(message), token(token), message(message) {};
-    Token token;
-    std::string message;
-
-};
+#include "environment.cpp"
 
 class Interpreter: public ExprVisitor, public StmtVisitor {
 
@@ -40,7 +34,11 @@ private:
         stmt->accept(*this);
     }
 
+    Environment* environment = new Environment();
+
 public:
+    ~Interpreter(){}
+
     Value* visitBinary(Binary& expr) {
         Value* left = evaluate(&expr.left);        
         Value* right = evaluate(&expr.right);        
@@ -82,7 +80,6 @@ public:
         std::ostringstream oss;
         oss << expr.oper.toString() << " " << "Operation failed on types \n";
         throw new RuntimeError(expr.oper, oss.str());
-
                 
     }
     
@@ -107,6 +104,7 @@ public:
         return new Value(); //NIL
     }
 
+
     Value* visitUnary(Unary& expr) {
 
         Value* right = evaluate(&expr.right);
@@ -120,6 +118,17 @@ public:
         return new Value(); //NIL
 
     }
+
+    Value* visitVariable(Variable& expr){ 
+        return environment->get(expr.name); 
+    }
+
+    Value* visitAssign(Assign& expr){
+        Value* value = evaluate(expr.value);
+        environment->assign(expr.name, value);
+        return value; 
+    }
+
 
     void visitExprStmt(ExprStmt& stmt) {
         evaluate(stmt.expression);
@@ -142,13 +151,12 @@ public:
         }
     }
 
-
-    void report(int line, const std::string& where, const std::string& message) {
-        std::cerr << "[line " << line << "] Error" << where << ": " << message << std::endl;
-        hadError = true;
-    }
-
-    void error(int line, const std::string& message) {
-        report(line, "", message);
+    void visitVarStmt(VarStmt& stmt){
+        Value* value = new Value();
+        if (stmt.initializer != nullptr) 
+            value = evaluate(stmt.initializer); 
+        
+        environment->define(stmt.name.lexeme, value);
+        return; 
     }
 };

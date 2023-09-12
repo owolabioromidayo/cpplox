@@ -6,18 +6,20 @@
 #include <unordered_map>
 
 #include "types.h"
+#include "error.h"
+
 #include "scanner.cpp"
 #include "parser.cpp"
 #include "pretty_printer.cpp"
 #include "interpreter.cpp"
 
+Interpreter* interpreter = new Interpreter();
 
 void run(const std::string& source) {
     Scanner scanner(source);
     std::vector<Token> tokens = scanner.scanTokens();
     Parser* parser = new Parser(tokens);
     std::vector<Statement*> statements = parser->parse();
-    Interpreter* interpreter = new Interpreter();
     interpreter->interpret(statements);
 
     // if (hadError) return;
@@ -43,15 +45,17 @@ void runFile(char* path){
         return;
     }
 
-    std::string line;
-    while (std::getline(file, line)) {
-        run(line);
-        if (hadError){
-            return;
-        }
-    }
+    file.seekg(0, std::ios::end);
+    std::streampos fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
 
+    // Read the entire file content into a string
+    std::string fileContents;
+    fileContents.resize(fileSize);
+    file.read(&fileContents[0], fileSize);
     file.close();
+
+    run(fileContents);
 }
 
 void runPrompt() {

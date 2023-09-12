@@ -7,19 +7,6 @@
 
 // #include "types.cpp"
 
-bool hadError = false; 
-
-
-
-
-void report(int line, const std::string& where, const std::string& message) {
-    std::cerr << "[line " << line << "] Error" << where << ": " << message << std::endl;
-    hadError = true;
-}
-
-void error(int line, const std::string& message) {
-    report(line, "", message);
-}
 
 class Scanner {
 public:
@@ -93,14 +80,14 @@ private:
                 break;
 
 
+            // Ignore whitespace.
             case ' ':
             case '\r':
             case '\t':
-            // Ignore whitespace.
-            break;
+                break;
             case '\n':
-            line++;
-            break;
+                line++;
+                break;
 
             case '"': string(); break;
 

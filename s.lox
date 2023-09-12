@@ -1,3 +1,7 @@
-print "one";
-print true;
-print 2 + 1;
+var a = 2; 
+print a;
+var b = 3;
+a = 4; 
+print a+b;
+print a == 4;
+print a = 2;    

@@ -11,6 +11,12 @@
 #include <cctype>
 #include <unordered_map>
 
+
+template<typename Base, typename T>
+inline bool isinstanceof(const T*) {
+    return std::is_base_of<Base, T>::value;
+}
+
 enum class ValueType{ 
     STRING, NUMBER, NIL, BOOLEAN
 };
@@ -45,6 +51,16 @@ struct Value{
     Value() : type(ValueType::NIL) {}
     Value(const std::string& value) : type(ValueType::STRING), str(value) {}
 
+    Value(Value& other) {
+        type = other.type;
+        switch (other.type){
+            case ValueType::NUMBER: number = other.number; break;
+            case ValueType::STRING: str = other.str; break;
+            case ValueType::BOOLEAN: bool_ = other.bool_; break;
+             
+        }
+    }
+    
     std::string view(){
        std::ostringstream oss;
        oss << "{ " << valueTypeToString(type) << " " ;
@@ -64,10 +80,31 @@ struct Value{
        return oss.str();
     }
 
-    ~Value() {
-        if (type == ValueType::STRING) {
-            str.~basic_string();
+    Value* operator=(const Value& other) {
+        if (this != &other) {
+            // switch (type){
+            //     case ValueType::NUMBER: return new Value(number);
+            //     case ValueType::STRING: return new Value(str);
+            //     case ValueType::BOOLEAN: return new Value(bool_);
+            //     case ValueType::NIL : return new Value(); 
+            // }
+            return new Value(other);
         }
+        return this;
+    }
+
+    Value(const Value& other) {
+        type = other.type;
+        switch (other.type){
+            case ValueType::NUMBER: number = other.number; break;
+            case ValueType::STRING: str = other.str; break;
+            case ValueType::BOOLEAN: bool_ = other.bool_; break;
+             
+        }
+    }
+
+    ~Value() {
+       
     }
 };
 
@@ -130,8 +167,12 @@ class Binary;
 class Grouping; 
 class Literal; 
 class Unary; 
+class Variable;
+class Assign;
+
 class ExprStmt;
 class PrintStmt;
+class VarStmt;
 
 class ExprVisitor {
 public:
@@ -139,6 +180,8 @@ public:
     virtual Value* visitGrouping(Grouping& expr) = 0;
     virtual Value* visitLiteral(Literal& expr) = 0;
     virtual Value* visitUnary(Unary& expr) = 0;
+    virtual Value* visitVariable(Variable& expr) = 0;
+    virtual Value* visitAssign(Assign& expr) = 0;
     virtual ~ExprVisitor() {}
 };
 
@@ -146,6 +189,7 @@ class StmtVisitor{
 public:
     virtual void visitPrintStmt(PrintStmt& stmt) = 0;     
     virtual void visitExprStmt(ExprStmt& stmt) = 0;     
+    virtual void visitVarStmt(VarStmt& stmt) = 0;     
 };
 
 class Expr {
@@ -201,6 +245,20 @@ public:
     }
 };
 
+class Assign : public Expr {
+public:
+    Assign(Token name, Expr* value)
+        : name(name), value(value) {}
+
+    Token name;
+    Expr* value;
+
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitAssign(*this);
+    }
+};
+
+
 class Unary : public Expr {
 public:
     Unary(Token& oper, Expr& right)
@@ -215,6 +273,18 @@ public:
 
     Value* accept(ExprVisitor& visitor) {
         return visitor.visitUnary(*this);
+    }
+};
+
+class Variable : public Expr {
+public:
+    Variable(Token& name): name(name) {}
+    Variable(Token name): name(name) {}
+
+    Token name;
+
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitVariable(*this);
     }
 };
 
@@ -235,6 +305,17 @@ public:
     }
 };
 
+class VarStmt : public Statement {
+public:
+    VarStmt(Token name, Expr* initializer): name(name), initializer(initializer) {};
+    
+    Token name;
+    Expr* initializer;
+
+    void accept(StmtVisitor& visitor) {
+        return visitor.visitVarStmt(*this);
+    }
+};
 
 class PrintStmt : public Statement {
 public:

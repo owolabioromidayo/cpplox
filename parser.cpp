@@ -2,13 +2,9 @@
 #include <stdexcept>
 #include <vector>
 #include "types.h"
+#include "error.h"
 
 
-
-class ParseError : public std::runtime_error {
-public:
-    ParseError(const std::string& message) : std::runtime_error(message) {}
-};
 
 
 class Parser {
@@ -30,12 +26,32 @@ public:
     std::vector<Statement*> parse(){
         std::vector<Statement*> statements;
         while(!isAtEnd()){
-            statements.push_back(statement());
+            statements.push_back(declaration());
         }
         return statements;
     }
 private:
+    Statement* declaration(){
+        try {
+            if (match(TokenType::VAR)) return varDeclaration();
+            return statement();
 
+        }catch(ParseError error){
+            synchronize();
+            return new ExprStmt(new Literal( "nil", TokenType::NIL));
+        }
+    }
+
+    Statement* varDeclaration(){
+        Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
+        Expr* initializer;
+
+        if (match(TokenType::EQUAL)) {
+            initializer = expression();
+        }
+        consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
+        return new VarStmt(name, initializer);
+    }
     Statement* statement(){
         if (match(TokenType::PRINT)) return printStatement();
         return expressionStatement();
@@ -54,8 +70,25 @@ private:
     }
 
     Expr* expression() {
-        return equality();
+        return assignment();
     }
+
+    Expr* assignment(){
+        Expr* expr = equality();
+
+        if(match(TokenType::EQUAL)){
+            Token equals = previous();
+            Expr* value = assignment();
+
+            if (dynamic_cast<const Variable*>(expr) != nullptr){
+                Token name = dynamic_cast<Variable*>(expr)->name; 
+                return new Assign(name, value);
+            }
+
+        error(equals, "Invalid assignment target"); 
+        }
+        return expr; 
+    };
 
 
     Expr* equality(){
@@ -126,7 +159,7 @@ private:
         if (match(TokenType::FALSE)) return new Literal("false", TokenType::FALSE);
         if (match(TokenType::TRUE)) return new Literal("true", TokenType::TRUE);
         if (match(TokenType::NIL)) return new Literal("nil", TokenType::NIL);
-
+        if (match(TokenType::IDENTIFIER)) return new Variable(previous());
 
         std::vector<TokenType> exprs = {TokenType::NUMBER, TokenType::STRING};
         if (match(exprs)){
