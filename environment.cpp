@@ -1,7 +1,7 @@
 #include <unordered_map>
 #include <string>
-#include "types.h"
-#include "error.h"
+#include "types.hpp"
+#include "error.hpp"
 
 class Environment {
 private:

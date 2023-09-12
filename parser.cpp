@@ -1,8 +1,10 @@
-// #include "types.h"
+// #include "types.hpp"
 #include <stdexcept>
 #include <vector>
-#include "types.h"
-#include "error.h"
+#include "types.hpp"
+#include "error.hpp"
+
+#include "pretty_printer.hpp"
 
 
 
@@ -44,7 +46,8 @@ private:
 
     Statement* varDeclaration(){
         Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
-        Expr* initializer;
+
+        Expr* initializer = nullptr;
 
         if (match(TokenType::EQUAL)) {
             initializer = expression();
@@ -55,7 +58,73 @@ private:
     Statement* statement(){
         if (match(TokenType::PRINT)) return printStatement();
         if (match(TokenType::LEFT_BRACE)) return block();
+        if (match(TokenType::IF)) return ifStatement();
+        if (match(TokenType::WHILE)) return whileStatement();
+        if (match(TokenType::FOR)) return forStatement();
         return expressionStatement();
+    }
+
+    Statement* ifStatement() {
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr* condition = expression();
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
+        Statement* thenBranch = statement();
+        Statement* elseBranch = nullptr;
+        if (match(TokenType::ELSE)) 
+            elseBranch = statement();
+        
+        return new IfStmt(condition, thenBranch, elseBranch);
+    }
+
+    Statement* forStatement() {
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'while'.");
+
+        Statement* initializer;
+        if (match(TokenType::SEMICOLON)) {
+            initializer = nullptr;
+        } else if (match(TokenType::VAR)) {
+            initializer = varDeclaration();
+        } else {
+            initializer = expressionStatement();
+        }
+
+        Expr* condition = nullptr;
+
+        if (!check(TokenType::SEMICOLON))
+            condition = expression();
+
+        consume(TokenType::SEMICOLON, "Expect ';' after value. ");
+
+        Expr* increment = nullptr;
+        if (!check(TokenType::RIGHT_PAREN)) {
+            increment = expression();
+
+        }
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after for clauses.");
+
+        Statement* body = statement();
+
+        if (increment != nullptr) {
+            Statement* expr = new ExprStmt(increment);
+            std::vector< Statement*> statements = {body, expr};
+            body = new BlockStmt(statements);
+        }
+
+        body = new WhileStmt(condition, body);
+        if (initializer != nullptr){
+            std::vector<Statement* > statements = {initializer, body}; 
+            body = new BlockStmt(statements); 
+        }
+        
+        return body;
+    }
+
+    Statement* whileStatement() {
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'while'.");
+        Expr* condition = expression();
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after condition.");
+        Statement* body = statement();
+        return new WhileStmt(condition, body);
     }
 
     Statement* printStatement(){
@@ -86,7 +155,7 @@ private:
     }
 
     Expr* assignment(){
-        Expr* expr = equality();
+        Expr* expr = or_();
 
         if(match(TokenType::EQUAL)){
             Token equals = previous();
@@ -100,8 +169,28 @@ private:
         error(equals, "Invalid assignment target"); 
         }
         return expr; 
-    };
+    }
 
+    Expr* or_(){
+        Expr* expr = and_();
+        while (match(TokenType::OR)) {
+            Token oper = previous();
+            Expr* right = and_();
+            expr = new Logical(expr, oper, right);
+        }
+        return expr; 
+    }
+
+    Expr* and_(){ 
+        Expr* expr = equality();
+
+        while (match(TokenType::AND)) {
+            Token oper = previous();
+            Expr* right = equality();
+            expr = new Logical(expr, oper, right);
+        }
+        return expr;
+    }
 
     Expr* equality(){
         Expr* expr = comparison();

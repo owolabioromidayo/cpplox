@@ -5,12 +5,11 @@
 #include <cctype>
 #include <unordered_map>
 
-#include "types.h"
-#include "error.h"
+#include "types.hpp"
+#include "error.hpp"
 
 #include "scanner.cpp"
 #include "parser.cpp"
-#include "pretty_printer.cpp"
 #include "interpreter.cpp"
 
 Interpreter* interpreter = new Interpreter();

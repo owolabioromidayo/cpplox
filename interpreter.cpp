@@ -1,7 +1,8 @@
 #include <sstream> // For std::ostringstream
 
-#include "types.h"
-#include "error.h"
+#include "types.hpp"
+#include "error.hpp"
+#include "pretty_printer.hpp"
 
 #include "environment.cpp"
 
@@ -12,22 +13,23 @@ private:
         return expr->accept(*this);
     }
 
-    Value* isTruthy(Value* value){
+    bool isTruthy(Value* value){
         if(value->type == ValueType::NIL)
-            return new Value(false);
-        if (value->type == ValueType::BOOLEAN)
-            return value;
+            return false;
+        if (value->type == ValueType::BOOLEAN){
+            return value->bool_;
+        }
 
-        return new Value(true);
+        return  true;
     }
 
-    Value* isEqual(Value* a, Value* b){
+    bool isEqual(Value* a, Value* b){
         if (a->type == ValueType::NIL && b->type == ValueType::NIL)
-            return new Value(true);
+            return true;
         if (a->type == ValueType::NIL) 
-            return new Value(false);
+            return false;
         
-        return new Value( a->bool_ == b->bool_ );
+        return  a->bool_ == b->bool_ ;
     }
 
     void execute(Statement* stmt){
@@ -37,7 +39,7 @@ private:
     void executeBlock(std::vector<Statement*> statements, Environment* environment) {
         Environment* previous = this->environment;
         this->environment = environment;
-        
+
             for (Statement* statement: statements){
                     execute(statement); 
             }
@@ -74,16 +76,16 @@ public:
                 case TokenType::PLUS:
                     return new Value(left->number + right->number);
 
-                case TokenType::BANG_EQUAL: return new Value(!( isEqual(left, right)->bool_ ));
-                case TokenType::EQUAL_EQUAL: return isEqual(left, right);
+                case TokenType::BANG_EQUAL: return new Value(!(isEqual(left, right)));
+                case TokenType::EQUAL_EQUAL: return new Value(isEqual(left, right));
             }
         } else if(left->type == ValueType::STRING && right->type == ValueType::STRING){
            switch (expr.oper.type){
                 case TokenType::PLUS:
                     return new Value(left->str + right->str);
 
-                case TokenType::BANG_EQUAL: return new Value(!( isEqual(left, right)->bool_ ));
-                case TokenType::EQUAL_EQUAL: return isEqual(left, right);
+                case TokenType::BANG_EQUAL: return new Value(!( isEqual(left, right)));
+                case TokenType::EQUAL_EQUAL: return new Value(isEqual(left, right));
            }
         } 
 
@@ -140,6 +142,17 @@ public:
         return value; 
     }
 
+    Value* visitLogicalExpr(Logical& expr){
+        Value* left = evaluate(expr.left);
+
+        if(expr.oper.type == TokenType::OR){ 
+            if(isTruthy(left)) return left; 
+        } else {
+            if (!(isTruthy(left)) ) return left; 
+        }
+        return evaluate(expr.right);
+    }
+
 
     void visitExprStmt(ExprStmt& stmt) {
         evaluate(stmt.expression);
@@ -164,15 +177,32 @@ public:
 
     void visitVarStmt(VarStmt& stmt){
         Value* value = new Value();
-        if (stmt.initializer != nullptr) 
+        if (stmt.initializer != nullptr){
             value = evaluate(stmt.initializer); 
-        
-        environment->define(stmt.name.lexeme, value);
-        return; 
+            environment->define(stmt.name.lexeme, value);
+            return;
+        } 
+            environment->define(stmt.name.lexeme, new Value());
     }
 
     void visitBlockStmt(BlockStmt& stmt){
         executeBlock(stmt.statements, new Environment(environment));
         return; 
+    }
+
+    void visitIfStmt(IfStmt& stmt){
+        if (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch);
+        } else if (stmt.elseBranch != nullptr) {
+            execute(stmt.elseBranch);
+        }
+        return;
+    }
+
+    void visitWhileStmt(WhileStmt& stmt) {
+        while (isTruthy(evaluate(stmt.condition))) 
+            execute(stmt.body);
+
+        return;
     }
 };

@@ -169,11 +169,14 @@ class Literal;
 class Unary; 
 class Variable;
 class Assign;
+class Logical;
 
 class ExprStmt;
 class PrintStmt;
 class VarStmt;
 class BlockStmt;
+class IfStmt;
+class WhileStmt;
 
 class ExprVisitor {
 public:
@@ -183,6 +186,7 @@ public:
     virtual Value* visitUnary(Unary& expr) = 0;
     virtual Value* visitVariable(Variable& expr) = 0;
     virtual Value* visitAssign(Assign& expr) = 0;
+    virtual Value* visitLogicalExpr(Logical& expr) = 0;
     virtual ~ExprVisitor() {}
 };
 
@@ -192,6 +196,8 @@ public:
     virtual void visitExprStmt(ExprStmt& stmt) = 0;     
     virtual void visitVarStmt(VarStmt& stmt) = 0;     
     virtual void visitBlockStmt(BlockStmt& stmt) = 0;     
+    virtual void visitIfStmt(IfStmt& stmt) = 0;     
+    virtual void visitWhileStmt(WhileStmt& stmt) = 0;     
 };
 
 class Expr {
@@ -290,6 +296,20 @@ public:
     }
 };
 
+class Logical: public Expr {
+public:
+    Logical(Expr* left, Token oper, Expr* right)
+        : left(left), oper(oper), right(right) {}
+
+    Expr* left; 
+    Token oper;
+    Expr* right;
+
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitLogicalExpr(*this);
+    }
+};
+
 class Statement {
 public:
     ~Statement() {} 
@@ -307,10 +327,24 @@ public:
     }
 };
 
+class IfStmt: public Statement {
+public:
+    IfStmt(Expr* condition, Statement* thenBranch, Statement* elseBranch)
+        : condition(condition), thenBranch(thenBranch), elseBranch(elseBranch) {};
+
+    Expr* condition;
+    Statement* thenBranch;
+    Statement* elseBranch;
+
+    void accept(StmtVisitor& visitor) {
+        return visitor.visitIfStmt(*this);
+    }
+};
+
 class BlockStmt : public Statement {
 public:
     std::vector<Statement*> statements;
-    
+
     BlockStmt(std::vector<Statement*> statements): statements(statements) {};
     
     void accept(StmtVisitor& visitor) {
@@ -328,6 +362,18 @@ public:
 
     void accept(StmtVisitor& visitor) {
         return visitor.visitVarStmt(*this);
+    }
+};
+
+class WhileStmt : public Statement {
+public:
+    WhileStmt(Expr* condition, Statement* body): condition(condition), body(body) {};
+    
+    Expr* condition;
+    Statement* body;
+
+    void accept(StmtVisitor& visitor) {
+        return visitor.visitWhileStmt(*this);
     }
 };
 

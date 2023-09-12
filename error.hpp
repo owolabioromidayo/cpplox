@@ -1,7 +1,7 @@
 #ifndef ERROR_H_
 #define ERROR_H_
 
-#include "types.h"
+#include "types.hpp"
 
 class RuntimeError: public std::runtime_error {
 public:
