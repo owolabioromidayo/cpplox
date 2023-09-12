@@ -173,6 +173,7 @@ class Assign;
 class ExprStmt;
 class PrintStmt;
 class VarStmt;
+class BlockStmt;
 
 class ExprVisitor {
 public:
@@ -190,6 +191,7 @@ public:
     virtual void visitPrintStmt(PrintStmt& stmt) = 0;     
     virtual void visitExprStmt(ExprStmt& stmt) = 0;     
     virtual void visitVarStmt(VarStmt& stmt) = 0;     
+    virtual void visitBlockStmt(BlockStmt& stmt) = 0;     
 };
 
 class Expr {
@@ -303,6 +305,18 @@ public:
     void accept(StmtVisitor& visitor) {
         return visitor.visitExprStmt(*this);
     }
+};
+
+class BlockStmt : public Statement {
+public:
+    std::vector<Statement*> statements;
+    
+    BlockStmt(std::vector<Statement*> statements): statements(statements) {};
+    
+    void accept(StmtVisitor& visitor) {
+        return visitor.visitBlockStmt(*this);
+    }
+
 };
 
 class VarStmt : public Statement {

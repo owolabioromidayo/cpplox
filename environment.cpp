@@ -5,14 +5,24 @@
 
 class Environment {
 private:
+
     std::unordered_map<std::string, Value*> values; 
 
 
 public:
+    Environment(Environment* enclosing) : enclosing(enclosing){}
+    
+    Environment(){
+        enclosing = nullptr;
+    }
+
+    Environment* enclosing;
+
     void define(std::string name, Value* value) {
        values[name] = value;
 
     }
+
 
     Value* get(Token name){
         auto it = values.find(name.lexeme);
@@ -20,10 +30,10 @@ public:
         if (it != values.end()) 
            return it->second;
 
-        std::ostringstream oss;
-        oss << "Undefined variable " << name.lexeme << "."; 
-        std::cout << "Undefined variable " << name.lexeme << "."; 
-        throw new RuntimeError(name, oss.str());
+        if (enclosing != nullptr) 
+            return enclosing->get(name);
+
+        throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
     void view(){
@@ -37,6 +47,9 @@ public:
             values[name.lexeme] = value;
             return;
         }
+
+        if (enclosing != nullptr) 
+            return enclosing->assign(name, value);
 
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }

@@ -34,6 +34,17 @@ private:
         stmt->accept(*this);
     }
 
+    void executeBlock(std::vector<Statement*> statements, Environment* environment) {
+        Environment* previous = this->environment;
+        this->environment = environment;
+        
+            for (Statement* statement: statements){
+                    execute(statement); 
+            }
+
+        this->environment = previous;
+    }
+
     Environment* environment = new Environment();
 
 public:
@@ -157,6 +168,11 @@ public:
             value = evaluate(stmt.initializer); 
         
         environment->define(stmt.name.lexeme, value);
+        return; 
+    }
+
+    void visitBlockStmt(BlockStmt& stmt){
+        executeBlock(stmt.statements, new Environment(environment));
         return; 
     }
 };

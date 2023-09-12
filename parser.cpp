@@ -54,6 +54,7 @@ private:
     }
     Statement* statement(){
         if (match(TokenType::PRINT)) return printStatement();
+        if (match(TokenType::LEFT_BRACE)) return block();
         return expressionStatement();
     }
 
@@ -61,6 +62,17 @@ private:
         Expr* value = expression();
         consume(TokenType::SEMICOLON, "Expect ';' after value. ");
         return new PrintStmt(value);
+    }
+
+    Statement* block(){
+        std::vector<Statement*> statements;
+
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            statements.push_back(declaration());
+        }
+        consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+        return new BlockStmt(statements);
+       
     }
 
     Statement* expressionStatement(){
