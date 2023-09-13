@@ -35,7 +35,7 @@ public:
         if (enclosing != nullptr) 
             return enclosing->get(name);
 
-        throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
+        throw RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
     void view(){
@@ -53,7 +53,7 @@ public:
         if (enclosing != nullptr) 
             return enclosing->assign(name, value);
 
-        throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
+        throw RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 };
 

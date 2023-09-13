@@ -145,7 +145,7 @@ public:
         //if it didnt match into anything
         std::ostringstream oss;
         oss << expr.oper.toString() << " " << "Operation failed on types \n";
-        throw new RuntimeError(expr.oper, oss.str());
+        throw RuntimeError(expr.oper, oss.str());
                 
     }
     
@@ -214,16 +214,20 @@ public:
         }
 
         if (callee->type != ValueType::CALLABLE) { 
-            throw new RuntimeError(expr.paren,
+            throw RuntimeError(expr.paren,
             "Can only call functions and classes.");
         }
 
         LoxCallable* function = callee->callable;
         if (arguments.size() != function->arity()) {
-            throw new RuntimeError(expr.paren, "Expected " +
+            throw RuntimeError(expr.paren, "Expected " +
             std::to_string(function->arity()) + " arguments but got " +
             std::to_string(arguments.size()) + ".");
         }
+        //definte the function
+        // std::cout << expr.paren.toString() << std::endl; 
+        this->globals->define(expr.paren.lexeme, new Value(function));
+        // std::cout << this->environment->get(expr.paren)->view() << std::endl;
         return function->call(this, arguments);
     }
 

@@ -323,7 +323,7 @@ private:
             } while (match(TokenType::COMMA));
         }
         Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
-        return new Call(callee, paren, arguments);
+        return new Call(callee, dynamic_cast<Variable*>(callee)->name, arguments);
     }
 
     bool isAtEnd() { 
@@ -373,14 +373,14 @@ private:
         throw error(peek(), message);
     }
 
-    void report(int line, const std::string& where, const std::string& message) {
-        std::cerr << "[line " << line << "] Error" << where << ": " << message << std::endl;
-        hadError = true;
-    }
+    // void report(int line, const std::string& where, const std::string& message) {
+    //     std::cerr << "[line " << line << "] Error" << where << ": " << message << std::endl;
+    //     hadError = true;
+    // }
 
-    ParseError* error(Token token, std::string message) {
+    ParseError error(Token token, std::string message) {
         report(token.line, "", message);
-        return new ParseError("");
+        return ParseError("");
     }
 
 
