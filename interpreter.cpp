@@ -1,10 +1,39 @@
 #include <sstream> // For std::ostringstream
+#include <chrono>
 
 #include "types.hpp"
 #include "error.hpp"
 #include "pretty_printer.hpp"
 
-#include "environment.cpp"
+#include "environment.hpp"
+
+
+class ClockCallable;
+class LoxFunction;
+class Interpreter;
+
+
+class ClockCallable : public LoxCallable {
+public:
+    int arity() {return 0;};
+
+    Value* call(Interpreter* interpreter, std::vector<Value*> arguments) { 
+
+        namespace sc = std::chrono;
+        auto time = sc::system_clock::now();
+        auto since_epoch = time.time_since_epoch();
+        auto millis = sc::duration_cast<sc::milliseconds>(since_epoch);
+        long now = millis.count() ;
+        double now_s = now / 1000;
+
+        return new Value(now_s);
+    };
+
+    std::string toString() {return "<native fn>";};
+
+    ClockCallable() {};
+};
+
 
 class Interpreter: public ExprVisitor, public StmtVisitor {
 
@@ -36,6 +65,25 @@ private:
         stmt->accept(*this);
     }
 
+
+
+
+
+public:
+
+    Environment* globals = new Environment();
+    Environment* environment = new Environment(globals);
+
+    ~Interpreter(){}
+
+    Interpreter(){
+        this->globals->define("clock", new Value(new ClockCallable()) );
+    }
+
+    // Environment* globals(){
+    //     return this->globals;
+    // }
+    
     void executeBlock(std::vector<Statement*> statements, Environment* environment) {
         Environment* previous = this->environment;
         this->environment = environment;
@@ -47,10 +95,15 @@ private:
         this->environment = previous;
     }
 
-    Environment* environment = new Environment();
-
-public:
-    ~Interpreter(){}
+    void interpret(std::vector<Statement*> statements){
+        try{
+            for (Statement* statement: statements){
+                execute(statement);
+            }
+        } catch(RuntimeError err) {
+            error(err.token.line, err.message);
+        }
+    }
 
     Value* visitBinary(Binary& expr) {
         Value* left = evaluate(&expr.left);        
@@ -153,7 +206,34 @@ public:
         return evaluate(expr.right);
     }
 
+    Value* visitCallExpr(Call& expr){
+        Value* callee = evaluate(expr.callee); //canat be value then, hmm
+        std::vector<Value*> arguments;
+        for (Expr* argument : expr.arguments) {
+            arguments.push_back(evaluate(argument));
+        }
 
+        if (callee->type != ValueType::CALLABLE) { 
+            throw new RuntimeError(expr.paren,
+            "Can only call functions and classes.");
+        }
+
+        LoxCallable* function = callee->callable;
+        if (arguments.size() != function->arity()) {
+            throw new RuntimeError(expr.paren, "Expected " +
+            std::to_string(function->arity()) + " arguments but got " +
+            std::to_string(arguments.size()) + ".");
+        }
+        return function->call(this, arguments);
+    }
+
+
+    void visitFunctionStmt(FunctionStmt& stmt){
+        LoxFunction* function = new LoxFunction(stmt);
+        this->environment->define(stmt.name.lexeme, new Value(function));
+        return;
+    } 
+    
     void visitExprStmt(ExprStmt& stmt) {
         evaluate(stmt.expression);
         return;
@@ -165,15 +245,6 @@ public:
         return;
     }
 
-    void interpret(std::vector<Statement*> statements){
-        try{
-            for (Statement* statement: statements){
-                execute(statement);
-            }
-        } catch(RuntimeError err) {
-            error(err.token.line, err.message);
-        }
-    }
 
     void visitVarStmt(VarStmt& stmt){
         Value* value = new Value();
@@ -206,3 +277,7 @@ public:
         return;
     }
 };
+
+
+
+

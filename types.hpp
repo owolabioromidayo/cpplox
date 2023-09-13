@@ -17,8 +17,20 @@ inline bool isinstanceof(const T*) {
     return std::is_base_of<Base, T>::value;
 }
 
+class Value; 
+class Interpreter; 
+class LoxCallable{
+public: 
+    // LoxCallable(){}
+    virtual int arity() = 0;
+    virtual Value* call(Interpreter* interpreter, std::vector<Value*> arguments) = 0;
+    virtual std::string toString() = 0 ;
+};
+
+
+
 enum class ValueType{ 
-    STRING, NUMBER, NIL, BOOLEAN
+    STRING, NUMBER, NIL, BOOLEAN, CALLABLE
 };
 
 const std::unordered_map<ValueType, std::string> ValueTypeToStringMap = {
@@ -26,7 +38,9 @@ const std::unordered_map<ValueType, std::string> ValueTypeToStringMap = {
     {ValueType::NUMBER, "number"},
     {ValueType::NIL, "nil"},
     {ValueType::BOOLEAN, "boolean"},
+    {ValueType::CALLABLE, "callable"},
 };
+
 
 std::string valueTypeToString(ValueType value) {
     auto it = ValueTypeToStringMap.find(value);
@@ -43,6 +57,7 @@ struct Value{
         double number;
         std::string str; 
         bool bool_;
+        LoxCallable* callable;
     };
 
     Value(int value) : type(ValueType::NUMBER), number(value) {}
@@ -50,16 +65,17 @@ struct Value{
     Value(bool value) : type(ValueType::BOOLEAN), bool_(value) {}
     Value() : type(ValueType::NIL) {}
     Value(const std::string& value) : type(ValueType::STRING), str(value) {}
+    Value(LoxCallable* value) : type(ValueType::CALLABLE), callable(value) {}
 
-    Value(Value& other) {
-        type = other.type;
-        switch (other.type){
-            case ValueType::NUMBER: number = other.number; break;
-            case ValueType::STRING: str = other.str; break;
-            case ValueType::BOOLEAN: bool_ = other.bool_; break;
-             
-        }
-    }
+    // Value(Value& other) {
+    //     type = other.type;
+    //     switch (other.type){
+    //         case ValueType::NUMBER: number = other.number; break;
+    //         case ValueType::STRING: str = other.str; break;
+    //         case ValueType::BOOLEAN: bool_ = other.bool_; break;
+    //         case ValueType::CALLABLE: callable= other.callable; break;
+    //     }
+    // }
     
     std::string view(){
        std::ostringstream oss;
@@ -74,6 +90,9 @@ struct Value{
             case ValueType::BOOLEAN:
                 oss << bool_;
                 break;
+            case ValueType::CALLABLE:
+                oss << callable->toString();
+                break;
        }
        oss << " }";
 
@@ -82,12 +101,6 @@ struct Value{
 
     Value* operator=(const Value& other) {
         if (this != &other) {
-            // switch (type){
-            //     case ValueType::NUMBER: return new Value(number);
-            //     case ValueType::STRING: return new Value(str);
-            //     case ValueType::BOOLEAN: return new Value(bool_);
-            //     case ValueType::NIL : return new Value(); 
-            // }
             return new Value(other);
         }
         return this;
@@ -99,7 +112,7 @@ struct Value{
             case ValueType::NUMBER: number = other.number; break;
             case ValueType::STRING: str = other.str; break;
             case ValueType::BOOLEAN: bool_ = other.bool_; break;
-             
+            case ValueType::CALLABLE: callable= other.callable; break;
         }
     }
 
@@ -167,6 +180,7 @@ class Binary;
 class Grouping; 
 class Literal; 
 class Unary; 
+class Call; 
 class Variable;
 class Assign;
 class Logical;
@@ -176,6 +190,7 @@ class PrintStmt;
 class VarStmt;
 class BlockStmt;
 class IfStmt;
+class FunctionStmt;
 class WhileStmt;
 
 class ExprVisitor {
@@ -183,6 +198,7 @@ public:
     virtual Value* visitBinary(Binary& expr) = 0;
     virtual Value* visitGrouping(Grouping& expr) = 0;
     virtual Value* visitLiteral(Literal& expr) = 0;
+    virtual Value* visitCallExpr(Call& expr) = 0;
     virtual Value* visitUnary(Unary& expr) = 0;
     virtual Value* visitVariable(Variable& expr) = 0;
     virtual Value* visitAssign(Assign& expr) = 0;
@@ -198,7 +214,10 @@ public:
     virtual void visitBlockStmt(BlockStmt& stmt) = 0;     
     virtual void visitIfStmt(IfStmt& stmt) = 0;     
     virtual void visitWhileStmt(WhileStmt& stmt) = 0;     
+    virtual void visitFunctionStmt(FunctionStmt& stmt) = 0;     
 };
+
+
 
 class Expr {
 public:
@@ -284,6 +303,21 @@ public:
     }
 };
 
+class Call : public Expr {
+public:
+    Call(Expr* callee, Token paren, std::vector<Expr*> arguments)
+        : callee(callee), paren(paren), arguments(arguments) {}
+   
+    Token paren;
+    Expr* callee;
+    std::vector<Expr*> arguments;
+
+    Value* accept(ExprVisitor& visitor) {
+        return visitor.visitCallExpr(*this);
+    }
+};
+
+
 class Variable : public Expr {
 public:
     Variable(Token& name): name(name) {}
@@ -309,6 +343,8 @@ public:
         return visitor.visitLogicalExpr(*this);
     }
 };
+
+
 
 class Statement {
 public:
@@ -338,6 +374,20 @@ public:
 
     void accept(StmtVisitor& visitor) {
         return visitor.visitIfStmt(*this);
+    }
+};
+
+class FunctionStmt: public Statement{
+public:
+    FunctionStmt(Token name, std::vector<Token> params, std::vector<Statement*> body)
+        : name(name), params(params), body(body) {}
+   
+    Token name;
+    std::vector<Token> params; 
+    std::vector<Statement*> body;
+
+    void accept(StmtVisitor& visitor) {
+        return visitor.visitFunctionStmt(*this);
     }
 };
 

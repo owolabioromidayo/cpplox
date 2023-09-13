@@ -7,12 +7,28 @@
 
 #include "types.hpp"
 #include "error.hpp"
+#include "loxfunction.h"
 
 #include "scanner.cpp"
 #include "parser.cpp"
 #include "interpreter.cpp"
 
 Interpreter* interpreter = new Interpreter();
+
+
+
+
+
+Value* LoxFunction::call(Interpreter* interpreter, std::vector<Value*> arguments) {
+    Environment* environment = new Environment(interpreter->globals);
+    
+    for (int i = 0; i < declaration->params.size(); i++) {
+        environment->define(declaration->params.at(i).lexeme,
+        arguments.at(i));
+    }
+    interpreter->executeBlock(declaration->body, environment);
+    return new Value();
+}
 
 void run(const std::string& source) {
     Scanner scanner(source);

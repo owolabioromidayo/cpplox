@@ -36,12 +36,34 @@ private:
     Statement* declaration(){
         try {
             if (match(TokenType::VAR)) return varDeclaration();
+            if (match(TokenType::FUN)) return funDeclaration("function ");
             return statement();
 
         }catch(ParseError error){
             synchronize();
             return new ExprStmt(new Literal( "nil", TokenType::NIL));
         }
+    }
+
+
+    Statement* funDeclaration(std::string kind){
+        Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
+
+        consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
+        std::vector<Token> parameters;
+        if (!check(TokenType::RIGHT_PAREN)) {
+            do {
+                if (parameters.size() >= 255) {
+                    error(peek(), "Can't have more than 255 parameters.");
+                }
+                parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
+            } while (match(TokenType::COMMA));
+        }
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+
+        consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        std::vector<Statement*> body = dynamic_cast<BlockStmt*>(block())->statements;
+        return new FunctionStmt(name, parameters, body);
     }
 
     Statement* varDeclaration(){
@@ -55,6 +77,7 @@ private:
         consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
         return new VarStmt(name, initializer);
     }
+
     Statement* statement(){
         if (match(TokenType::PRINT)) return printStatement();
         if (match(TokenType::LEFT_BRACE)) return block();
@@ -253,7 +276,21 @@ private:
             return new Unary(oper, right);   
         }
 
-        return primary();
+        return call();
+    }
+
+    Expr* call(){
+        Expr* expr = primary();
+
+        while(true){
+            if (match(TokenType::LEFT_PAREN)){
+                expr = finishCall(expr);
+            } else {
+                break;
+            }
+        }
+
+        return expr;
     }
 
     Expr* primary(){
@@ -276,7 +313,19 @@ private:
         throw error(peek(), "Expect expression.");
     }
 
-    
+    Expr* finishCall(Expr* callee){
+        std::vector<Expr*> arguments;
+        if (!check(TokenType::RIGHT_PAREN)) {
+            do {
+                if(arguments.size() >= 255)
+                    error(peek(), "Cant have more than 255 arguments");
+                arguments.push_back(expression());
+            } while (match(TokenType::COMMA));
+        }
+        Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
+        return new Call(callee, paren, arguments);
+    }
+
     bool isAtEnd() { 
         return peek().type == TokenType::EOF_;
     }
