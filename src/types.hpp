@@ -3,22 +3,16 @@
 
 #include <iostream>
 #include <string>
-#include <sstream> // For std::ostringstream
-
-
+#include <sstream> 
 #include <vector>
 #include <fstream>
 #include <cctype>
 #include <unordered_map>
 
 
-template<typename Base, typename T>
-inline bool isinstanceof(const T*) {
-    return std::is_base_of<Base, T>::value;
-}
-
 class Value; 
 class Interpreter; 
+
 class LoxCallable{
 public: 
     // LoxCallable(){}
@@ -26,7 +20,6 @@ public:
     virtual Value* call(Interpreter* interpreter, std::vector<Value*> arguments) = 0;
     virtual std::string toString() = 0 ;
 };
-
 
 
 enum class ValueType{ 
@@ -51,6 +44,7 @@ std::string valueTypeToString(ValueType value) {
     }
 }
 
+
 struct Value{
     ValueType type;
     union {
@@ -66,16 +60,6 @@ struct Value{
     Value() : type(ValueType::NIL) {}
     Value(const std::string& value) : type(ValueType::STRING), str(value) {}
     Value(LoxCallable* value) : type(ValueType::CALLABLE), callable(value) {}
-
-    // Value(Value& other) {
-    //     type = other.type;
-    //     switch (other.type){
-    //         case ValueType::NUMBER: number = other.number; break;
-    //         case ValueType::STRING: str = other.str; break;
-    //         case ValueType::BOOLEAN: bool_ = other.bool_; break;
-    //         case ValueType::CALLABLE: callable= other.callable; break;
-    //     }
-    // }
     
     std::string view(){
        std::ostringstream oss;
@@ -164,8 +148,6 @@ public:
     std::string lexeme;
     std::string literal;
     int line;
-
-    //literal handling seems very broken, thanks cpp and no reflection
 
     Token(TokenType type, const std::string& lexeme, const std::string& literal, int line) :
         type(type), lexeme(lexeme), literal(literal), line(line) {}

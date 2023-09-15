@@ -34,7 +34,6 @@ void Interpreter::execute(Statement* stmt){
 }
 
 
-
 Interpreter::~Interpreter(){}
 
 Interpreter::Interpreter(){
