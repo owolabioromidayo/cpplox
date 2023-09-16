@@ -363,10 +363,6 @@ Token Parser::consume(TokenType type, std::string message) {
     throw error(peek(), message);
 }
 
-// void report(int line, const std::string& where, const std::string& message) {
-//     std::cerr << "[line " << line << "] Error" << where << ": " << message << std::endl;
-//     hadError = true;
-// }
 
 ParseError Parser::error(Token token, std::string message) {
     report(token.line, "", message);
