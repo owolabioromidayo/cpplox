@@ -13,10 +13,11 @@ public:
     int arity() { return declaration->params.size();};
     std::string toString() {return "<fn " + declaration->name.lexeme + ">" ;};
 
-    LoxFunction(FunctionStmt& declaration) : declaration(&declaration) {};
+    LoxFunction(FunctionStmt& declaration, Environment* closure) : declaration(&declaration), closure(closure) {};
 
 private: 
     FunctionStmt* declaration;
+    Environment* closure;
     
 };
 

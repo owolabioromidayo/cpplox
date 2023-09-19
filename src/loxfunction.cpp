@@ -1,8 +1,8 @@
 #include "loxfunction.hpp"
 
 
-Value* LoxFunction::call(Interpreter* interpreter, std::vector<Value*> arguments) {
-    Environment* environment = new Environment(interpreter->environment);
+Value* LoxFunction::call(Interpreter* interpreter,  std::vector<Value*> arguments) {
+    Environment* environment = new Environment(this->closure);
     Environment* previous = interpreter->environment;
     interpreter->environment = environment;
     

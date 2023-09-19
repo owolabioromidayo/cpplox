@@ -189,7 +189,7 @@ Value* Interpreter::visitCallExpr(Call& expr){
 
 
 void Interpreter::visitFunctionStmt(FunctionStmt& stmt){
-    LoxFunction* function = new LoxFunction(stmt);
+    LoxFunction* function = new LoxFunction(stmt, this->environment);
     this->environment->define(stmt.name.lexeme, new Value(function));
     return;
 } 
