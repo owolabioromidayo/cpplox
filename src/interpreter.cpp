@@ -33,6 +33,18 @@ void Interpreter::execute(Statement* stmt){
     stmt->accept(*this);
 }
 
+Value* Interpreter::lookUpVariable(Token name, Expr* expr){
+    auto distance = locals.find(expr); 
+    if(distance != locals.end()){
+        return environment->getAt(distance->second, name);
+    }
+
+    return globals->get(name); 
+}
+
+void Interpreter::resolve(Expr* expr, int depth){
+    locals[expr] = depth;
+}
 
 Interpreter::~Interpreter(){}
 
@@ -142,12 +154,20 @@ Value* Interpreter::visitUnary(Unary& expr) {
 }
 
 Value* Interpreter::visitVariable(Variable& expr){ 
-    return environment->get(expr.name); 
+    return lookUpVariable(expr.name, &expr);
 }
+
 
 Value* Interpreter::visitAssign(Assign& expr){
     Value* value = evaluate(expr.value);
-    environment->assign(expr.name, value);
+
+    auto distance = locals.find(&expr);  
+    if (distance != locals.end()){
+        environment->assignAt(distance->second, expr.name, value);
+    } else {
+        globals->assign(expr.name, value);
+    
+    }
     return value; 
 }
 

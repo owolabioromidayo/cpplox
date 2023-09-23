@@ -20,6 +20,15 @@ public:
 
     Environment* enclosing;
 
+    Environment* ancestor( int distance){
+        Environment* environment = this; 
+        for(int i=0; i < distance; i++){ 
+            environment = environment->enclosing; 
+        }
+
+        return environment;
+    }
+
     void define(std::string name, Value* value) {
        values[name] = value;
 
@@ -38,8 +47,17 @@ public:
         throw RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
+    Value* getAt(int distance, Token name){
+        auto temp = ancestor(distance)->values; 
+        if (temp.find(name.lexeme) != temp.end())
+            return temp[name.lexeme];
+
+        throw RuntimeError(name, "Undefined variable '" + name.lexeme +"'.");
+        return new Value(); 
+    }
+
     void view(){
-        for (auto it = values.begin(); it != values.end(); it++)
+        for (auto it = values.begin(); it != values.end(); it ++)
             std::cout << it->first << " " << it->second->view() << " \n";
     }
 
@@ -55,6 +73,11 @@ public:
 
         throw RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
+
+    void assignAt(int distance, Token name, Value* value) {
+        ancestor(distance)->values[name.lexeme] = value;
+    }
+
 };
 
 

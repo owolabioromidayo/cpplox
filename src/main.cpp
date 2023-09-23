@@ -11,6 +11,7 @@
 #include "loxfunction.cpp"
 #include "scanner.cpp"
 #include "parser.cpp"
+#include "resolver.cpp"
 #include "interpreter.cpp"
 #include "clockcallable.cpp"
 
@@ -22,9 +23,16 @@ void run(const std::string& source) {
     std::vector<Token> tokens = scanner.scanTokens();
     Parser* parser = new Parser(tokens);
     std::vector<Statement*> statements = parser->parse();
+
+    if (hadError) return;
+
+    Resolver resolver(interpreter);
+    resolver.resolve(statements);
+
+    if (hadError) return;
+    
     interpreter->interpret(statements);
 
-    // if (hadError) return;
 
     // PrettyPrinter p;
 
@@ -56,6 +64,8 @@ void runFile(char* path){
     fileContents.resize(fileSize);
     file.read(&fileContents[0], fileSize);
     file.close();
+
+    fileContents = "{" + fileContents + "}";
 
     run(fileContents);
 }

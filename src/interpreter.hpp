@@ -22,11 +22,16 @@ public:
     Environment* globals = new Environment();
     Environment* environment = new Environment(globals);
 
+
+     std::unordered_map<Expr*, int> locals; //stack
+
     ~Interpreter();
     Interpreter();
 
     void executeBlock(std::vector<Statement*> statements, Environment* environment) ;
     void interpret(std::vector<Statement*> statements);
+    void resolve(Expr* expr, int depth);
+    Value* lookUpVariable(Token name, Expr* expr);
 
     Value* visitBinary(Binary& expr);
     Value* visitGrouping(Grouping& expr) ;
